@@ -95,9 +95,12 @@ def redirect_url(short_code):
 
         if password:
             provided = request.args.get('password')
+            if not provided:
+                conn.close()
+                return render_template('password.html')
             if provided != password:
                 conn.close()
-                return jsonify({'error': 'Password required', 'hint': 'Add ?password=yourpassword to the URL'}), 401
+                return redirect(f'/{short_code}/protect?error=wrong')
 
         cursor.execute('INSERT INTO clicks (short_code) VALUES (?)', (short_code,))
         conn.commit()
@@ -106,6 +109,10 @@ def redirect_url(short_code):
     else:
         conn.close()
         return jsonify({'error': 'Link not found'}), 404
+
+@app.route('/<short_code>/protect')
+def password_page(short_code):
+    return render_template('password.html')
     
 @app.route('/analytics/<short_code>')
 def analytics(short_code):

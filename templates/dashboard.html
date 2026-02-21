@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapLink - Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0f1a;
+            color: #fff;
+            min-height: 100vh;
+        }
+        nav {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ffffff15;
+        }
+        .logo { font-size: 24px; font-weight: 700; color: #a78bfa; }
+        .back-btn {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .total-badge {
+            background: #a78bfa20;
+            color: #a78bfa;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            border: 1px solid #a78bfa40;
+        }
+        .link-card {
+            background: #1e1e2e;
+            border: 1px solid #ffffff15;
+            border-radius: 14px;
+            padding: 20px 24px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border 0.2s;
+        }
+        .link-card:hover { border-color: #a78bfa40; }
+        .link-info { flex: 1; min-width: 0; }
+        .short-code {
+            color: #a78bfa;
+            font-weight: 700;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+        .original-url {
+            color: #94a3b8;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 400px;
+        }
+        .badges { margin-top: 6px; display: flex; gap: 6px; }
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+        .badge-expired { background: #f8717120; color: #f87171; }
+        .badge-active { background: #34d39920; color: #34d399; }
+        .badge-protected { background: #fbbf2420; color: #fbbf24; }
+        .link-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: 16px;
+        }
+        .clicks {
+            text-align: center;
+            min-width: 60px;
+        }
+        .clicks-number {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .clicks-label {
+            font-size: 11px;
+            color: #94a3b8;
+        }
+        .btn-icon {
+            background: transparent;
+            border: 1px solid #ffffff15;
+            color: #94a3b8;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            width: auto;
+        }
+        .btn-icon:hover { border-color: #a78bfa; color: #a78bfa; }
+        .btn-delete:hover { border-color: #f87171; color: #f87171; }
+        .empty {
+            text-align: center;
+            padding: 80px 20px;
+            color: #94a3b8;
+        }
+        .empty h2 { font-size: 20px; margin-bottom: 8px; }
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1e1e2e;
+            border: 1px solid #a78bfa40;
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+            z-index: 999;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">⚡ SnapLink</div>
+        <a href="/" class="back-btn">← Create New Link</a>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <h1>📊 Your Dashboard</h1>
+            <div class="total-badge" id="totalBadge">Loading...</div>
+        </div>
+        <div id="linksList"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 2500);
+        }
+
+        function copyUrl(shortCode) {
+            navigator.clipboard.writeText(`http://127.0.0.1:5000/${shortCode}`);
+            showToast('✅ Copied to clipboard!');
+        }
+
+        async function deleteLink(shortCode) {
+            if (!confirm(`Delete /${shortCode}?`)) return;
+            const res = await fetch(`/delete/${shortCode}`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.success) {
+                showToast('🗑️ Link deleted!');
+                loadLinks();
+            }
+        }
+
+        async function loadLinks() {
+            const res = await fetch('/all-links');
+            const data = await res.json();
+            const list = document.getElementById('linksList');
+            const badge = document.getElementById('totalBadge');
+
+            badge.textContent = `${data.length} link${data.length !== 1 ? 's' : ''}`;
+
+            if (data.length === 0) {
+                list.innerHTML = `
+                    <div class="empty">
+                        <h2>No links yet!</h2>
+                        <p>Go create your first short link.</p>
+                    </div>`;
+                return;
+            }
+
+            list.innerHTML = data.map(link => `
+                <div class="link-card">
+                    <div class="link-info">
+                        <div class="short-code">⚡ /${link.short_code}</div>
+                        <div class="original-url">${link.original_url}</div>
+                        <div class="badges">
+                            ${link.expires_at && new Date(link.expires_at) < new Date()
+                                ? '<span class="badge badge-expired">⏰ Expired</span>'
+                                : '<span class="badge badge-active">✅ Active</span>'}
+                            ${link.password ? '<span class="badge badge-protected">🔒 Protected</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="link-actions">
+                        <div class="clicks">
+                            <div class="clicks-number">${link.total_clicks}</div>
+                            <div class="clicks-label">clicks</div>
+                        </div>
+                        <button class="btn-icon" onclick="copyUrl('${link.short_code}')">📋</button>
+                        <button class="btn-icon" onclick="window.open('/analytics-page/${link.short_code}')">📊</button>
+                        <button class="btn-icon btn-delete" onclick="deleteLink('${link.short_code}')">🗑️</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        loadLinks();
+    </script>
+</body>
+</html>

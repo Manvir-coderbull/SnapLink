@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapLink - URL Shortener</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0f1a;
+            color: #fff;
+            min-height: 100vh;
+        }
+        nav {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ffffff15;
+        }
+        .logo { font-size: 24px; font-weight: 700; color: #a78bfa; }
+        .hero {
+            text-align: center;
+            padding: 80px 20px 40px;
+        }
+        .hero h1 {
+            font-size: 52px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+        .hero p {
+            color: #94a3b8;
+            font-size: 18px;
+            margin-bottom: 50px;
+        }
+        .card {
+            background: #1e1e2e;
+            border: 1px solid #ffffff15;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            background: #0f0f1a;
+            border: 1px solid #ffffff20;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 15px;
+            margin-bottom: 12px;
+            outline: none;
+            transition: border 0.2s;
+        }
+        input:focus { border-color: #a78bfa; }
+        input::placeholder { color: #4a4a6a; }
+        .options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        button:hover { opacity: 0.9; }
+        .result {
+            margin-top: 24px;
+            background: #0f0f1a;
+            border: 1px solid #a78bfa40;
+            border-radius: 12px;
+            padding: 20px;
+            display: none;
+        }
+        .result-url {
+            color: #a78bfa;
+            font-size: 18px;
+            font-weight: 600;
+            word-break: break-all;
+            margin-bottom: 12px;
+        }
+        .result-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 13px;
+            border-radius: 8px;
+            width: auto;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #a78bfa;
+            color: #a78bfa;
+        }
+        .qr-img {
+            margin-top: 16px;
+            border-radius: 8px;
+            display: none;
+        }
+        .error {
+            color: #f87171;
+            font-size: 14px;
+            margin-top: 8px;
+            display: none;
+        }
+        .stats {
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        .stats h2 {
+            color: #94a3b8;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+        .stat-card {
+            background: #1e1e2e;
+            border: 1px solid #ffffff15;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .stat-url { color: #a78bfa; font-weight: 600; }
+        .stat-clicks {
+            background: #a78bfa20;
+            color: #a78bfa;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+   <nav>
+    <div class="logo">⚡ SnapLink</div>
+    <a href="/dashboard" style="color: #a78bfa; text-decoration: none; font-size: 14px; border: 1px solid #a78bfa40; padding: 8px 16px; border-radius: 8px;">📊 Dashboard</a>
+   </nav>
+
+    <div class="hero">
+        <h1>Shorten. Share. Track.</h1>
+        <p>Create short links with analytics, expiry, and password protection.</p>
+
+        <div class="card">
+            <input type="url" id="urlInput" placeholder="Paste your long URL here..." />
+            <div class="options">
+                <input type="text" id="aliasInput" placeholder="Custom alias (optional)" />
+                <input type="number" id="expiryInput" placeholder="Expires in days (optional)" />
+            </div>
+            <input type="password" id="passwordInput" placeholder="Password protect (optional)" />
+            <button onclick="shortenUrl()">✨ Shorten URL</button>
+            <div class="error" id="errorMsg"></div>
+
+            <div class="result" id="result">
+                <div class="result-url" id="shortUrl"></div>
+                <div class="result-actions">
+                    <button class="btn-small" onclick="copyUrl()">📋 Copy</button>
+                    <button class="btn-small btn-outline" onclick="showQR()">📱 QR Code</button>
+                    <button class="btn-small btn-outline" onclick="viewAnalytics()">📊 Analytics</button>
+                </div>
+                <img id="qrImg" class="qr-img" width="150" />
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentShortCode = '';
+
+        async function shortenUrl() {
+            const url = document.getElementById('urlInput').value;
+            const alias = document.getElementById('aliasInput').value;
+            const expiry = document.getElementById('expiryInput').value;
+            const password = document.getElementById('passwordInput').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            if (!url) {
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = 'Please enter a URL!';
+                return;
+            }
+
+            const body = { url };
+            if (alias) body.custom_alias = alias;
+            if (expiry) body.expires_in_days = expiry;
+            if (password) body.password = password;
+
+            try {
+                const response = await fetch('/shorten', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    errorMsg.style.display = 'block';
+                    errorMsg.textContent = data.error;
+                    return;
+                }
+
+                errorMsg.style.display = 'none';
+                currentShortCode = data.short_url.split('/').pop();
+                document.getElementById('shortUrl').textContent = data.short_url;
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('qrImg').style.display = 'none';
+
+            } catch (err) {
+                errorMsg.style.display = 'block';
+                errorMsg.textContent = 'Something went wrong!';
+            }
+        }
+
+        function copyUrl() {
+            const url = document.getElementById('shortUrl').textContent;
+            navigator.clipboard.writeText(url);
+            alert('Copied to clipboard!');
+        }
+
+        function showQR() {
+            const img = document.getElementById('qrImg');
+            img.src = `/qr/${currentShortCode}`;
+            img.style.display = 'block';
+        }
+
+        function viewAnalytics() {
+            window.open(`/analytics/${currentShortCode}`, '_blank');
+        }
+    </script>
+</body>
+</html>

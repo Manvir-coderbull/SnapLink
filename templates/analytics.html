@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SnapLink - Analytics</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #0f0f1a;
+            color: #fff;
+            min-height: 100vh;
+        }
+        nav {
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #ffffff15;
+        }
+        .logo { font-size: 24px; font-weight: 700; color: #a78bfa; }
+        .back-btn {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 60px auto;
+            padding: 0 20px;
+        }
+        .stat-card {
+            background: #1e1e2e;
+            border: 1px solid #ffffff15;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 20px;
+        }
+        .stat-card h2 {
+            color: #94a3b8;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .stat-value {
+            font-size: 48px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .url-card {
+            background: #1e1e2e;
+            border: 1px solid #ffffff15;
+            border-radius: 16px;
+            padding: 32px;
+            margin-bottom: 20px;
+        }
+        .url-card h2 {
+            color: #94a3b8;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+        .original-url {
+            color: #60a5fa;
+            word-break: break-all;
+            font-size: 15px;
+            margin-bottom: 16px;
+        }
+        .short-url {
+            color: #a78bfa;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            margin-top: 12px;
+        }
+        .badge-protected {
+            background: #f8717120;
+            color: #f87171;
+            border: 1px solid #f8717140;
+        }
+        .badge-expiry {
+            background: #fbbf2420;
+            color: #fbbf24;
+            border: 1px solid #fbbf2440;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">⚡ SnapLink</div>
+        <a href="/" class="back-btn">← Back to Home</a>
+    </nav>
+
+    <div class="container">
+        <div class="url-card">
+            <h2>Link Details</h2>
+            <div class="original-url" id="originalUrl">Loading...</div>
+            <div class="short-url" id="shortUrl"></div>
+            <div id="badges"></div>
+        </div>
+
+        <div class="stat-card">
+            <h2>Total Clicks</h2>
+            <div class="stat-value" id="totalClicks">-</div>
+        </div>
+    </div>
+
+    <script>
+        const shortCode = window.location.pathname.split('/').pop();
+
+        fetch(`/analytics/${shortCode}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('originalUrl').textContent = 'Link not found';
+                    return;
+                }
+                document.getElementById('originalUrl').textContent = data.original_url;
+                document.getElementById('shortUrl').textContent = `snaplink.com/${shortCode}`;
+                document.getElementById('totalClicks').textContent = data.total_clicks;
+
+                const badges = document.getElementById('badges');
+                if (data.password_protected) {
+                    badges.innerHTML += `<span class="badge badge-protected">🔒 Password Protected</span>`;
+                }
+                if (data.expires_at && data.expires_at !== 'Never') {
+                    badges.innerHTML += `<span class="badge badge-expiry">⏰ Expires: ${data.expires_at}</span>`;
+                }
+            });
+    </script>
+</body>
+</html>

@@ -72,7 +72,7 @@ def shorten_url():
 
     return jsonify({
         'original_url': original_url,
-        'short_url': f'http://127.0.0.1:5000/{short_code}',
+        'short_url': f'{request.host_url}{short_code}',
         'expires_at': str(expires_at) if expires_at else 'Never',
         'password_protected': True if password else False
     })

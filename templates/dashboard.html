@@ -167,7 +167,7 @@
         }
 
         function copyUrl(shortCode) {
-            navigator.clipboard.writeText(`http://127.0.0.1:5000/${shortCode}`);
+            navigator.clipboard.writeText(`${window.location.origin}/${shortCode}`);
             showToast('✅ Copied to clipboard!');
         }
 

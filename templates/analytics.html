@@ -127,7 +127,7 @@
                     return;
                 }
                 document.getElementById('originalUrl').textContent = data.original_url;
-                document.getElementById('shortUrl').textContent = `snaplink.com/${shortCode}`;
+                document.getElementById('shortUrl').textContent = `${window.location.origin}/${shortCode}`;
                 document.getElementById('totalClicks').textContent = data.total_clicks;
 
                 const badges = document.getElementById('badges');
